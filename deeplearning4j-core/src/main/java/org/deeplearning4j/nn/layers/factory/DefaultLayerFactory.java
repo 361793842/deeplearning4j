@@ -76,10 +76,23 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.OutputLayer(conf);
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.RnnOutputLayer)
             return new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
-        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
-            return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer) {
+            try {
+                Class<?> c = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionLayer");
+                return c.asSubclass(org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class)
+                        .getConstructor(NeuralNetConfiguration.class).newInstance(conf);
+            } catch (Throwable t) {
+                return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
+            }
+        }
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
-            return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+            try {
+                Class<?> c = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingLayer");
+                return c.asSubclass(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class)
+                        .getConstructor(NeuralNetConfiguration.class).newInstance(conf);
+            } catch (Throwable t) {
+                return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+            }
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.BatchNormalization)
             return new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)

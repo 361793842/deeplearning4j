@@ -30,7 +30,7 @@ public class SubsamplingLayer extends Layer {
         MAX, AVG, SUM, NONE
     }
 
-    private SubsamplingLayer(Builder builder) {
+    protected SubsamplingLayer(Builder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
         if(builder.kernelSize.length != 2)

@@ -87,6 +87,7 @@ public class ConvolutionLayerSetup {
 
         if(i < lastLayerNumber){
             switch (inputLayer.getClass().getSimpleName()){
+                case "CudnnConvolutionLayer":
                 case "ConvolutionLayer":
                     ConvolutionLayer convolutionLayer = (ConvolutionLayer) inputLayer;
                     if(i == 0) {
@@ -97,6 +98,7 @@ public class ConvolutionLayerSetup {
                     getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, convolutionLayer.getKernelSize(), convolutionLayer.getPadding(), convolutionLayer.getStride());
                     lastOutChannels = convolutionLayer.getNOut();
                     switch (outputLayer.getClass().getSimpleName()) {
+                        case "CudnnConvolutionLayer":
                         case "ConvolutionLayer":
                             ConvolutionLayer nextConv = (ConvolutionLayer) outputLayer;
                             //set next layer's convolution input channels to be equal to this layer's out channels
@@ -105,6 +107,7 @@ public class ConvolutionLayerSetup {
                             nextConv.setNIn(lastnOut);
                             break;
                         case "LocalResponseNormalization":
+                        case "CudnnSubsamplingLayer":
                         case "SubsamplingLayer":
                             lastOutChannels = lastnOut = convolutionLayer.getNOut();
                             storeNInAndNOut(inLayerName, lastnOut);
@@ -146,17 +149,20 @@ public class ConvolutionLayerSetup {
 
                     }
                     break;
+                case "CudnnSubsamplingLayer":
                 case "SubsamplingLayer":
                     if(i < lastLayerNumber){
                         SubsamplingLayer subsamplingLayer = (SubsamplingLayer) inputLayer;
                         getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getPadding(), subsamplingLayer.getStride());
                         if (i == 0) throw new UnsupportedOperationException("Unsupported path: first layer shouldn't be " + inLayerName);
                         switch (outputLayer.getClass().getSimpleName()) {
+                            case "CudnnConvolutionLayer":
                             case "ConvolutionLayer":
                                 ConvolutionLayer nextConv = (ConvolutionLayer) outputLayer;
                                 storeNInAndNOut(outLayerName, lastOutChannels);
                                 nextConv.setNIn(lastOutChannels);
                                 break;
+                            case "CudnnSubsamplingLayer":
                             case "SubsamplingLayer":
                                 storeNInAndNOut(inLayerName, lastnOut);
                                 break;
@@ -195,12 +201,14 @@ public class ConvolutionLayerSetup {
                     FeedForwardLayer feedForwardLayer = (FeedForwardLayer) inputLayer;
                     switch (outputLayer.getClass().getSimpleName()) {
                         // ffn -> ccn
+                        case "CudnnConvolutionLayer":
                         case "ConvolutionLayer":
                             convolutionLayer = (ConvolutionLayer) outputLayer;
                             conf.inputPreProcessor(i, new RnnToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             lastnOut = convolutionLayer.getNOut();
                             convolutionLayer.setNIn(lastnOut);
                             break;
+                        case "CudnnSubsamplingLayer":
                         case "SubsamplingLayer":
                             throw new UnsupportedOperationException("Subsampling Layer should be connected to Convolution, LocalResponseNormalization or BatchNormalization Layer");
                         case "GravesLSTM":
@@ -239,12 +247,14 @@ public class ConvolutionLayerSetup {
                     if (i == 0) throw new UnsupportedOperationException("Apply nIn attribute to the layer configuration for " + inLayerName);
                     feedForwardLayer = (FeedForwardLayer) inputLayer;
                     switch (outputLayer.getClass().getSimpleName()) {
+                        case "CudnnConvolutionLayer":
                         case "ConvolutionLayer":
                             convolutionLayer = (ConvolutionLayer) outputLayer;
                             conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             lastnOut = lastOutChannels;
                             convolutionLayer.setNIn(lastnOut);
                             break;
+                        case "CudnnSubsamplingLayer":
                         case "SubsamplingLayer":
                             conf.inputPreProcessor(i+1, new FeedForwardToCnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             lastnOut = lastOutChannels;
@@ -283,6 +293,7 @@ public class ConvolutionLayerSetup {
                 case "BatchNormalization":
                     if (i == 0) throw new UnsupportedOperationException("Unsupported path: first layer shouldn't be " + inLayerName);
                     switch (outputLayer.getClass().getSimpleName()) {
+                        case "CudnnConvolutionLayer":
                         case "ConvolutionLayer":
                             convolutionLayer = (ConvolutionLayer) outputLayer;
                             if(useCNN) {
@@ -294,6 +305,7 @@ public class ConvolutionLayerSetup {
                                 convolutionLayer.setNIn(lastnOut);
                             }
                             break;
+                        case "CudnnSubsamplingLayer":
                         case "SubsamplingLayer":
                             storeNInAndNOut(inLayerName, lastnOut);
                             break;
@@ -343,6 +355,7 @@ public class ConvolutionLayerSetup {
                     if (i == 0) throw new UnsupportedOperationException("Unsupported path: first layer shouldn't be " + inLayerName);
                     switch (outputLayer.getClass().getSimpleName()) {
                         //lrn -> cnn
+                        case "CudnnConvolutionLayer":
                         case "ConvolutionLayer":
                             ConvolutionLayer nextConv = (ConvolutionLayer) outputLayer;
                             storeNInAndNOut(outLayerName, lastOutChannels);
